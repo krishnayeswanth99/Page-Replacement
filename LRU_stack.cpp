@@ -1,38 +1,69 @@
 #include <iostream>
-#include<deque>
-#include<set>
-#include<algorithm>
+#include <ctime>
+#include<vector>
 using namespace std;
-set<int> presentPages;
-deque<int> lru;
+class Set{
+  public:
+  vector<int> vect;
+  vector<int>::iterator it;
 
+  int size(){
+    return vect.size();
+  }
+  void insert(int page){
+    vect.push_back(page);
+  }
+
+  bool find(int page){
+    bool found = false;
+    for(it = vect.begin();it != vect.end();it++){
+      if (*it==page){
+        found = true;
+        break;
+      }
+    }
+    return found;
+  }
+
+  void erase(int page){
+    for(it = vect.begin();it != vect.end();it++){
+      if (*it==page){
+        vect.erase(it);
+        break;
+      }
+    }
+  }
+};
+Set presentPages;
+Set lru;
+int faults=0;
 void refer(int page,int max_size){
-  set<int>::iterator it;
-  it = presentPages.find(page);
-  if(it != presentPages.end()){
+  if(presentPages.find(page)){
     // Already exists
     cout<<"Page "<<page<<" already exists in the page table"<<endl;
-    deque<int>::iterator lru_it = find(lru.begin(),lru.end(),page);
-    lru.erase(lru_it);
-    lru.push_back(page);
+    lru.find(page);
+    lru.erase(page);
+    lru.insert(page);
   }
   else if(presentPages.size() < max_size){
     //Doesn't exist - but has space
+    faults++;
     cout<<"Page fault: page "<<page<<" doesn't exist in the table but the table is not full"<<endl;
     presentPages.insert(page);
-    lru.push_back(page);
+    lru.insert(page);
     cout<<"Page "<<page<<" has been added to the page table"<<endl;
   }
   else{
     //Doesn't exist and all slots are occupied
+    faults++;
     cout<<"Page fault: page "<<page<<" doesn't exist in the table and the table is full"<<endl;
     //Finding existing page with the least count
-    int lru_page = lru.front();
-    lru.erase(lru.begin());
+    int lru_page = *lru.vect.begin();
+    lru.erase(lru_page);
     cout<<"Page "<<lru_page<<" is LRU and is being replaced by page "<<page<<endl;
     presentPages.erase(lru_page);    //Remove the page with the least count;
     presentPages.insert(page);
-    lru.push_back(page);      //Adding the new page
+    lru.insert(page);      //Adding the new page
   }
 }
 int main() {
@@ -48,8 +79,15 @@ int main() {
     cin>>pages[i];
   }
 
+  clock_t begin = clock();
   //Refer page by page
   for(int i=0;i<n;i++){
     refer(pages[i], max_size);
   }
+  clock_t end = clock();
+
+  cout<<"\n\n\nTotal no. of page references: "<<n<<endl;
+  cout<<"Total no. of page faults: "<<faults<<endl;
+  double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+  cout<<"Time taken: "<<elapsed_secs<<endl;
 }
